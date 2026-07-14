@@ -185,12 +185,6 @@ web/            self-contained interactive explainer
 docs/           the theory behind each stratum's model
 ```
 
-## A note on how this was built
-
-The framework, the code, and this write-up were developed with the assistance of
-a large language model, used as a thinking and drafting partner. The design
-decisions, the choice of what to model and what to leave out, and the framing are
-mine, and any errors are as well.
 
 ## License
 
