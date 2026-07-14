@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "euq"
+version = "0.1.0"
+description = "Epistemological Uncertainty Quantification: propagate measurement, labeling, and sampling assumptions through to model outputs."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Lemon" }]
+keywords = [
+    "uncertainty quantification",
+    "epistemology",
+    "measurement theory",
+    "sampling bias",
+    "philosophy of data",
+    "sensitivity analysis",
+]
+dependencies = ["numpy>=1.22"]
+
+[project.optional-dependencies]
+examples = ["scikit-learn>=1.0"]
+dev = ["pytest>=7.0", "scikit-learn>=1.0"]
+
+[project.urls]
+Homepage = "https://github.com/ralegionc/epistemological-uncertainty"
+Source = "https://github.com/ralegionc/epistemological-uncertainty"
+
+[tool.setuptools.packages.find]
+include = ["euq*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
