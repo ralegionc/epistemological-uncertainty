@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Epistemological Uncertainty Quantification</title>
+<meta name="description" content="Honest uncertainty that includes not just statistical noise but the uncertainty about whether your data means what you think it means.">
+<style>
+  :root{
+    --bg:#0a0b0f; --panel:#101219; --panel-2:#0d0f15;
+    --line:#20232e; --line-2:#2b2f3d;
+    --ink:#d7d5cc; --ink-dim:#8b8a83; --ink-faint:#5b5c62;
+    --m:#8b83ff; --l:#3fd0a4; --s:#ef8a5a; --t:#4f9be6;
+    --m-d:#1a1830; --l-d:#0f2a23; --s-d:#2c1a10; --t-d:#0e2238;
+    --mono:ui-monospace,"SF Mono",Menlo,"Cascadia Mono",monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:var(--sans); line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(circle at 18% 12%,rgba(139,131,255,.05),transparent 42%),
+                     radial-gradient(circle at 82% 78%,rgba(79,155,230,.045),transparent 46%);
+    background-attachment:fixed;
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:56px 24px 80px}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint);margin:0 0 18px}
+  h1{font-size:30px;line-height:1.2;font-weight:600;letter-spacing:-.01em;margin:0 0 14px;color:#eceae1}
+  .thesis{font-size:16px;color:var(--ink-dim);max-width:56ch;margin:0 0 8px}
+  .thesis em{color:var(--ink);font-style:normal;border-bottom:1px solid var(--line-2)}
+
+  .stack{margin:40px 0 12px;display:flex;flex-direction:column;gap:7px}
+  .band{
+    border:1px solid var(--line); border-radius:11px; overflow:hidden;
+    background:var(--panel); cursor:pointer;
+    transition:border-color .18s, transform .18s;
+  }
+  .band:hover{border-color:var(--line-2)}
+  .band:focus-visible{outline:2px solid var(--t);outline-offset:2px}
+  .band-head{display:flex;align-items:center;gap:13px;padding:14px 17px}
+  .chip{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+  .band.m .chip{background:var(--m)} .band.l .chip{background:var(--l)}
+  .band.s .chip{background:var(--s)} .band.t .chip{background:var(--t)}
+  .band-name{font-size:14.5px;font-weight:500;color:#e4e2d9}
+  .band-sym{margin-left:auto;font-family:var(--mono);font-size:13px;color:var(--ink-faint)}
+  .band-body{
+    max-height:0;overflow:hidden;
+    transition:max-height .28s ease;
+    padding:0 17px;
+    font-size:13.5px;color:var(--ink-dim);
+  }
+  .band.open .band-body{max-height:280px;padding:0 17px 15px}
+  .band.m.open{background:linear-gradient(180deg,var(--m-d),var(--panel) 70%)}
+  .band.l.open{background:linear-gradient(180deg,var(--l-d),var(--panel) 70%)}
+  .band.s.open{background:linear-gradient(180deg,var(--s-d),var(--panel) 70%)}
+  .band.t.open{background:linear-gradient(180deg,var(--t-d),var(--panel) 70%)}
+  .formula{
+    font-family:var(--mono);font-size:11.5px;color:var(--ink-dim);
+    background:var(--panel-2);border:1px solid var(--line);
+    border-radius:7px;padding:8px 10px;margin-top:11px;line-height:1.7;
+  }
+
+  .controls{margin:34px 0 0;border:1px solid var(--line);border-radius:13px;background:var(--panel);padding:20px 22px}
+  .controls h2{font-size:13px;font-weight:500;letter-spacing:.02em;color:var(--ink-dim);margin:0 0 16px;text-transform:none}
+  .sld{display:flex;align-items:center;gap:14px;margin:0 0 13px}
+  .sld:last-child{margin-bottom:0}
+  .sld label{font-size:13px;width:190px;flex:0 0 auto;color:var(--ink-dim)}
+  .sld .k{font-family:var(--mono);font-size:12px}
+  .sld .k.m{color:var(--m)} .sld .k.l{color:var(--l)} .sld .k.s{color:var(--s)} .sld .k.t{color:var(--t)}
+  .sld output{font-family:var(--mono);font-size:12.5px;width:30px;text-align:right;color:var(--ink)}
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;flex:1;height:3px;border-radius:2px;
+    background:var(--line-2);outline:none;cursor:pointer;
+  }
+  input[type=range]:focus-visible{box-shadow:0 0 0 3px rgba(79,155,230,.3)}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--ink);border:2px solid var(--bg);cursor:pointer}
+  input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:var(--ink);border:2px solid var(--bg);cursor:pointer}
+
+  .presets{display:flex;flex-wrap:wrap;gap:7px;margin:22px 0 0}
+  .presets .lbl{font-size:12px;color:var(--ink-faint);align-self:center;margin-right:2px}
+  .pbtn{font-family:var(--sans);font-size:12.5px;padding:5px 12px;border-radius:8px;border:1px solid var(--line-2);background:transparent;color:var(--ink-dim);cursor:pointer;transition:all .15s}
+  .pbtn:hover{color:var(--ink);border-color:var(--ink-faint)}
+  .pbtn.on{color:var(--bg);background:var(--ink);border-color:var(--ink)}
+
+  /* signature: the two bands drawn to scale */
+  .sig{margin:34px 0 0;border:1px solid var(--line);border-radius:13px;background:var(--panel);padding:22px}
+  .sig h2{font-size:13px;font-weight:500;color:var(--ink-dim);margin:0 0 4px}
+  .sig .cap{font-size:12px;color:var(--ink-faint);margin:0 0 22px}
+  .scale{position:relative;height:96px;margin:0 6px}
+  .axis{position:absolute;left:0;right:0;top:50%;height:1px;background:var(--line-2)}
+  .tick{position:absolute;top:calc(50% + 6px);transform:translateX(-50%);font-family:var(--mono);font-size:10px;color:var(--ink-faint)}
+  .tick::before{content:"";position:absolute;left:50%;top:-8px;width:1px;height:6px;background:var(--line-2)}
+  .fullband{position:absolute;top:calc(50% - 15px);height:30px;border-radius:6px;background:rgba(139,131,255,.13);border:1px solid rgba(139,131,255,.34);transition:left .35s,width .35s}
+  .modelband{position:absolute;top:calc(50% - 6px);height:12px;border-radius:4px;background:var(--t);transition:left .35s,width .35s}
+  .point{position:absolute;top:calc(50% - 13px);width:2px;height:26px;background:#eee;transition:left .35s}
+  .lgd{display:flex;gap:18px;margin-top:18px;font-size:12px;color:var(--ink-dim);flex-wrap:wrap}
+  .lgd span{display:flex;align-items:center;gap:7px}
+  .sw{width:13px;height:11px;border-radius:3px;flex:0 0 auto}
+  .sw.full{background:rgba(139,131,255,.16);border:1px solid rgba(139,131,255,.4)}
+  .sw.mdl{background:var(--t)}
+
+  .readout{display:flex;flex-wrap:wrap;gap:12px;margin-top:22px}
+  .stat{flex:1;min-width:120px;background:var(--panel-2);border:1px solid var(--line);border-radius:9px;padding:12px 14px}
+  .stat .n{font-family:var(--mono);font-size:22px;color:#eceae1;line-height:1.1}
+  .stat .k{font-size:11.5px;color:var(--ink-faint);margin-top:4px}
+
+  .verdict{margin-top:16px;border-radius:9px;padding:12px 14px;font-size:13px;line-height:1.55;border:1px solid}
+  .verdict.good{background:rgba(63,208,164,.07);border-color:rgba(63,208,164,.32);color:#8fe6c9}
+  .verdict.warn{background:rgba(239,138,90,.07);border-color:rgba(239,138,90,.32);color:#f2b48f}
+  .verdict.bad{background:rgba(231,90,90,.08);border-color:rgba(231,90,90,.34);color:#eaa0a0}
+
+  .note{margin-top:26px;font-size:12.5px;color:var(--ink-faint);line-height:1.6}
+  .note code{font-family:var(--mono);color:var(--ink-dim);background:var(--panel-2);padding:1px 5px;border-radius:4px}
+  a{color:var(--t)}
+  footer{margin-top:44px;padding-top:22px;border-top:1px solid var(--line);font-size:12px;color:var(--ink-faint)}
+  @media (max-width:560px){
+    .wrap{padding:40px 18px 60px} h1{font-size:24px}
+    .sld label{width:130px;font-size:12px}
+    .band-name{font-size:13.5px}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Epistemological uncertainty quantification</p>
+  <h1>The hard problem of data</h1>
+  <p class="thesis">We assume data represents reality. But every measurement disturbs what it measures, every label encodes a theory-laden choice, and every dataset has a generative process that shapes what can be inferred from it.</p>
+  <p class="thesis">This is <em>honest uncertainty</em>: not just the statistical noise, but the uncertainty about whether your data means what you think it means.</p>
+
+  <div class="stack" id="stack">
+    <div class="band m open" tabindex="0" data-k="m">
+      <div class="band-head"><span class="chip"></span><span class="band-name">Measurement coupling</span><span class="band-sym">Δ_m</span></div>
+      <div class="band-body">
+        The instrument disturbs what it measures. A thermometer exchanges heat; a survey question primes the respondent; an fMRI voxel integrates over ~100,000 neurons. The value recorded is not identical to the latent quantity of interest, and the gap is <strong>systematic</strong> — it does not average away with more rows.
+        <div class="formula">x_obs = x_true · (1 + b) + a + e<br>b, a shared across all rows &nbsp;·&nbsp; e is per-cell noise</div>
+      </div>
+    </div>
+    <div class="band l" tabindex="0" data-k="l">
+      <div class="band-head"><span class="chip"></span><span class="band-name">Labeling ontology</span><span class="band-sym">Δ_l</span></div>
+      <div class="band-body">
+        Labels are theory-laden discretizations. "Employed" means different things to the BLS, a welfare researcher, and a gig-economy economist. "Depressed" at DSM-IV vs DSM-5 cutoffs is a different construct. The label looks like a fact; it is a convention.
+        <div class="formula">P(ŷ | x, L₁) &nbsp;vs&nbsp; P(ŷ | x, L₂)<br>Δ_l = spread over defensible label sets L</div>
+      </div>
+    </div>
+    <div class="band s" tabindex="0" data-k="s">
+      <div class="band-head"><span class="chip"></span><span class="band-name">Generative process</span><span class="band-sym">Δ_s</span></div>
+      <div class="band-body">
+        Who appears in the data, and why? Participation is never random — it reflects platform, incentive, reachability, time, framing. The mechanism produces P_data(X,Y), which may diverge from P_target in ways you cannot see from inside the sample.
+        <div class="formula">Δ_s = D( P_data ‖ P_target )<br>often unidentifiable without external knowledge</div>
+      </div>
+    </div>
+    <div class="band t" tabindex="0" data-k="t">
+      <div class="band-head"><span class="chip"></span><span class="band-name">Model uncertainty</span><span class="band-sym">Δ_θ</span></div>
+      <div class="band-body">
+        Classical epistemic and aleatoric uncertainty — parameter posteriors, conformal intervals, ensembles. This is what error bars usually report. In this framework it is the <strong>innermost</strong> layer, not the only one.
+        <div class="formula">Δ_θ = Var[ ŷ ] under the posterior / bootstrap</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="presets" id="presets">
+    <span class="lbl">Scenario</span>
+    <button class="pbtn on" data-p="custom">custom</button>
+    <button class="pbtn" data-p="survey">happiness survey</button>
+    <button class="pbtn" data-p="fmri">fMRI study</button>
+    <button class="pbtn" data-p="hiring">hiring ML</button>
+    <button class="pbtn" data-p="climate">climate proxy</button>
+  </div>
+
+  <div class="controls">
+    <h2>Assumption severities</h2>
+    <div class="sld"><label><span class="k m">Δ_m</span> instrument fidelity</label><input type="range" id="r_m" min="0" max="100" step="1" value="30"><output id="o_m">30</output></div>
+    <div class="sld"><label><span class="k l">Δ_l</span> construct validity</label><input type="range" id="r_l" min="0" max="100" step="1" value="40"><output id="o_l">40</output></div>
+    <div class="sld"><label><span class="k s">Δ_s</span> coverage gap</label><input type="range" id="r_s" min="0" max="100" step="1" value="50"><output id="o_s">50</output></div>
+    <div class="sld"><label><span class="k t">Δ_θ</span> statistical noise</label><input type="range" id="r_t" min="0" max="100" step="1" value="20"><output id="o_t">20</output></div>
+  </div>
+
+  <div class="sig">
+    <h2>What the model reports vs what is true</h2>
+    <p class="cap">The bright band is the conventional (model-only) error bar. The dim band is the honest, full-stack interval it sits inside.</p>
+    <div class="scale">
+      <div class="axis"></div>
+      <div class="tick" style="left:0%">0</div>
+      <div class="tick" style="left:25%">25</div>
+      <div class="tick" style="left:50%">50</div>
+      <div class="tick" style="left:75%">75</div>
+      <div class="tick" style="left:100%">100</div>
+      <div class="fullband" id="fullband"></div>
+      <div class="modelband" id="modelband"></div>
+      <div class="point" id="point"></div>
+    </div>
+    <div class="lgd">
+      <span><span class="sw mdl"></span>conventional band (Δ_θ only)</span>
+      <span><span class="sw full"></span>honest band (all four strata)</span>
+    </div>
+
+    <div class="readout">
+      <div class="stat"><div class="n" id="euq">65</div><div class="k">EUQ total</div></div>
+      <div class="stat"><div class="n" id="ratio">3.3×</div><div class="k">honest band ÷ conventional</div></div>
+      <div class="stat"><div class="n" id="outer">83%</div><div class="k">owned by outer strata</div></div>
+    </div>
+
+    <div class="verdict warn" id="verdict"></div>
+  </div>
+
+  <p class="note">The slider math here is a didactic proxy — strata compound multiplicatively as
+  <code>EUQ = 1 − ∏(1 − Δᵢ)</code>. The Python library does the real work: a nested Monte-Carlo
+  propagation that perturbs features, labels, weights, and rows through your actual estimand and
+  reports a per-stratum variance decomposition. See <code>examples/</code> for runnable cases where the
+  honest band comes out up to <strong>9× wider</strong> than the bootstrap alone.</p>
+
+  <footer>
+    Epistemological Uncertainty Quantification · MIT licensed · built as a study in the philosophy of measurement
+  </footer>
+</div>
+
+<script>
+(function(){
+  var presets = {
+    custom:{m:30,l:40,s:50,t:20},
+    survey:{m:55,l:70,s:65,t:15,note:"Likert scales alias rich phenomenology; \u201chappy\u201d is genuinely contested; online samples miss most of humanity."},
+    fmri:{m:60,l:50,s:40,t:25,note:"BOLD signal sits 2\u20133 steps from neural activity; cluster thresholds encode a theory; patient samples are small and convenience-based."},
+    hiring:{m:35,l:75,s:60,t:20,note:"R\u00e9sum\u00e9 text is a noisy proxy for capability; \u201cgood hire\u201d reflects a historical evaluator population; training data is who was allowed to apply."},
+    climate:{m:70,l:30,s:45,t:35,note:"Each proxy has a known but imperfect coupling to temperature; reconstruction is indirect; coverage historically clustered in the north."}
+  };
+  var ids=["m","l","s","t"];
+  function get(k){return +document.getElementById("r_"+k).value}
+  function set(k,v){document.getElementById("r_"+k).value=v;document.getElementById("o_"+k).textContent=v}
+
+  function render(note){
+    var m=get("m"),l=get("l"),s=get("s"),t=get("t");
+    ids.forEach(function(k){document.getElementById("o_"+k).textContent=get(k)});
+    var euq=Math.round((1-(1-m/100)*(1-l/100)*(1-s/100)*(1-t/100))*100);
+    // conventional half-width driven by t; honest half-width by euq. Center = 50.
+    var mHalf=Math.max(t*0.32,1.2);
+    var fHalf=Math.max(euq*0.46,mHalf+1);
+    var center=50;
+    var fb=document.getElementById("fullband");
+    fb.style.left=(center-fHalf)+"%"; fb.style.width=(2*fHalf)+"%";
+    var mb=document.getElementById("modelband");
+    mb.style.left=(center-mHalf)+"%"; mb.style.width=(2*mHalf)+"%";
+    document.getElementById("point").style.left=center+"%";
+
+    var outerVar=(m*m+l*l+s*s), totVar=outerVar+t*t;
+    var outer=totVar>0?Math.round(outerVar/totVar*100):0;
+    var ratio=(fHalf/mHalf);
+    document.getElementById("euq").textContent=euq;
+    document.getElementById("ratio").textContent=ratio.toFixed(1)+"\u00d7";
+    document.getElementById("outer").textContent=outer+"%";
+
+    var v=document.getElementById("verdict"),cls,txt;
+    if(note){cls="warn";txt=note;}
+    else if(euq<40){cls="good";txt="EUQ "+euq+"% \u2014 well-characterized. The statistical error bar is a reasonable summary if the outer strata are documented.";}
+    else if(euq<65){cls="warn";txt="EUQ "+euq+"% \u2014 qualify the error bar. A real share of uncertainty is about what the data means, not how much you have.";}
+    else{cls="bad";txt="EUQ "+euq+"% \u2014 the model-only band is cosmetic. The data-meaning gap dominates; run sensitivity analysis before drawing conclusions.";}
+    v.className="verdict "+cls; v.textContent=txt;
+  }
+
+  ids.forEach(function(k){document.getElementById("r_"+k).addEventListener("input",function(){setActivePreset("custom");render();});});
+
+  function setActivePreset(name){
+    var btns=document.querySelectorAll("#presets .pbtn");
+    btns.forEach(function(b){b.classList.toggle("on",b.dataset.p===name);});
+  }
+  document.querySelectorAll("#presets .pbtn").forEach(function(b){
+    b.addEventListener("click",function(){
+      var p=presets[b.dataset.p]; setActivePreset(b.dataset.p);
+      set("m",p.m);set("l",p.l);set("s",p.s);set("t",p.t);
+      render(p.note||null);
+    });
+  });
+
+  // expandable bands
+  document.querySelectorAll("#stack .band").forEach(function(band){
+    function tog(){band.classList.toggle("open");}
+    band.addEventListener("click",tog);
+    band.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();tog();}});
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
